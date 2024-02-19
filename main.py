@@ -1,16 +1,19 @@
-# This is a sample Python script.
+import oracledb
+import os
 
-# Press Maj+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+try:
+    connexion = oracledb.connect(
+        config_dir=os.path.join(script_dir, "wallet"),
+        user="admin",
+        password="Lebelfranck2297$",
+        dsn="franciscloud_high",
+        wallet_location=os.path.join(script_dir, "wallet"),
+        wallet_password="Lebelfranck2297$")
+    print("Connexion à la base de données réussie.")
+    connexion.close()
+except oracledb.DatabaseError as e:
+    print("Erreur lors de la connexion à la base de données:", e)
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
-
-
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
