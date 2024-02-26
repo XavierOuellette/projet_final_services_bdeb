@@ -131,7 +131,7 @@ def delete_user():
 
 @app.route('/update_user', methods=["POST"])
 # Méthode pour mettre à jour les informations d'un utilisateur
-# Retourne le user modifié
+# Retourne confirmation de changement
 def update_user():
     data = request.get_json()
 
@@ -175,6 +175,42 @@ def update_user():
         connexion.rollback()
         error_message = f"Erreur lors de la mise à jour des informations de l'utilisateur : {str(e)}"
         print(error_message)
+        return jsonify({"message": error_message}), 500
+    finally:
+        cursor.close()
+
+
+@app.route('/update_role', methods=["POST"])
+# Méthode pour mettre à jour le rôle d'un user
+# Retourne confirmation du changement
+def update_role():
+    data = request.get_json()
+
+    if not all(key in data for key in ('id', 'role_id')):
+        abort(400, "Les données fournies sont incomplètes pour la mise à jour du rôle")
+
+    user_id = data['id']
+    new_role_id = data['role_id']
+
+    cursor = connexion.cursor()
+
+    try:
+        # Vérifiez si l'utilisateur existe
+        cursor.execute("SELECT COUNT(*) FROM users WHERE id = :1", (user_id,))
+        user_count = cursor.fetchone()[0]
+
+        if user_count == 0:
+            return jsonify({"message": f"L'utilisateur avec l'ID {user_id} n'existe pas"}), 404
+
+        cursor.execute("UPDATE users SET role_id = :1 WHERE id = :2", (new_role_id, user_id))
+
+        connexion.commit()
+
+        return jsonify({"message": f"Le rôle de l'utilisateur avec l'ID {user_id} a été mis à jour avec succès"})
+    except oracledb.DatabaseError as e:
+        error_message = f"Erreur lors de la mise à jour du rôle de l'utilisateur avec l'ID {user_id}: {str(e)}"
+        print(error_message)
+        connexion.rollback()
         return jsonify({"message": error_message}), 500
     finally:
         cursor.close()
