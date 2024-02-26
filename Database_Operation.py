@@ -28,3 +28,31 @@ def insert_user():
 
     finally:
         cursor.close()
+
+
+@app.route('/all_users', methods=["GET"])
+def get_all_users():
+    cursor = connexion.cursor()
+
+    try:
+        cursor.execute("SELECT id, email, username, role FROM users")
+        users = cursor.fetchall()
+
+        user_list = []
+        role_dict = {0: "admin", 1: "user"}
+        for user in users:
+            user_dict = {
+                'id': user[0],
+                'email': user[1],
+                'username': user[2],
+                'role': role_dict[user[3]]
+            }
+            user_list.append(user_dict)
+
+        return jsonify({"users": user_list})
+    except oracledb.DatabaseError as e:
+        error_message = "Erreur lors de la récupération des utilisateurs: " + str(e)
+        print(error_message)
+        abort(500, error_message)
+    finally:
+        cursor.close()
