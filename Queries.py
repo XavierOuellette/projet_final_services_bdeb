@@ -10,14 +10,14 @@ from flask import request, abort, jsonify
 def insert_user():
     data = request.get_json()
 
-    if not all(key in data for key in ('password', 'email', 'username')):
+    if not all(key in data for key in ('username', 'password', 'email')):
         abort(400, 'Les données incomplètes pour l\'insertion')
 
     cursor = connexion.cursor()
 
     try:
-        cursor.execute("INSERT INTO users (password, email, username) VALUES (:1, :2, :3)",
-                       (data['password'], data['email'], data['username']))
+        cursor.execute("INSERT INTO users (username, password, email) VALUES (:1, :2, :3)",
+                       (data['username'], data['password'], data['email']))
 
         connexion.commit()
         print("User ajouté avec succès.")
@@ -39,20 +39,21 @@ def get_all_users():
     cursor = connexion.cursor()
 
     try:
-        cursor.execute("SELECT id, email, username, role FROM users")
+        cursor.execute("""
+            SELECT u.id, u.username, u.email, r.role_name 
+            FROM users u 
+            JOIN Roles r ON u.role_id = r.role_id
+        """)
         users = cursor.fetchall()
 
         user_list = []
 
-        # Par defaut les role sont 0 pour admin et 1 pour user
-        # Changer le defaut pour retourner admin ou user
-        role_dict = {0: "admin", 1: "user"}
         for user in users:
             user_dict = {
                 'id': user[0],
-                'email': user[1],
-                'username': user[2],
-                'role': role_dict[user[3]]
+                'username': user[1],
+                'email': user[2],
+                'role': user[3]
             }
             user_list.append(user_dict)
 
@@ -61,6 +62,41 @@ def get_all_users():
         error_message = "Erreur lors de la récupération des utilisateurs: " + str(e)
         print(error_message)
         abort(500, error_message)
+    finally:
+        cursor.close()
+
+
+@app.route('/get_user', methods=["GET"])
+# Méthode pour chercher un user
+# Retourne l'id, username, email et role du user
+def get_user():
+    user_id = request.args.get('id')
+
+    cursor = connexion.cursor()
+
+    try:
+        cursor.execute(f"""
+            SELECT u.id, u.username, u.email, r.role_name 
+            FROM users u 
+            JOIN Roles r ON u.role_id = r.role_id
+            WHERE u.id = {user_id}
+        """)
+        user = cursor.fetchone()
+
+        if user:
+            user_dict = {
+                'id': user[0],
+                'username': user[1],
+                'email': user[2],
+                'role': user[3]
+            }
+            return jsonify({"user": user_dict})
+        else:
+            return jsonify({"message": "Utilisateur non trouvé."}), 404
+    except oracledb.DatabaseError as e:
+        error_message = f"Erreur lors de la récuparation de l'utilisateur avec l'ID {user_id}: {str(e)}"
+        print(error_message)
+        return jsonify({"message": error_message}), 500
     finally:
         cursor.close()
 
