@@ -127,3 +127,54 @@ def delete_user():
         return jsonify({"message": error_message}), 500
     finally:
         cursor.close()
+
+
+@app.route('/update_user', methods=["POST"])
+# Méthode pour mettre à jour les informations d'un utilisateur
+# Retourne le user modifié
+def update_user():
+    data = request.get_json()
+
+    if 'id' not in data:
+        return jsonify({"message": "L'ID de l'utilisateur est manquant."}), 400
+
+    # Récupérez les données de l'utilisateur à partir du corps de la requête
+    user_id = data['id']
+    new_username = data.get('username')
+    new_email = data.get('email')
+
+    # Vérifiez si au moins l'une des données à mettre à jour est présente
+    if not any([new_username, new_email]):
+        return jsonify({"message": "Aucune donnée à mettre à jour n'a été fournie."}), 400
+
+    cursor = connexion.cursor()
+
+    try:
+        update_query = "UPDATE users SET"
+        update_values = []
+
+        if new_username:
+            update_query += " username = :1,"
+            update_values.append(new_username)
+        if new_email:
+            update_query += " email = :2,"
+            update_values.append(new_email)
+
+        # Supprimez la virgule supplémentaire à la fin de la requête de mise à jour
+        update_query = update_query.rstrip(',')
+
+        # Ajoutez la clause WHERE pour filtrer par ID utilisateur
+        update_query += f" WHERE id = {user_id}"
+        cursor.execute(update_query, update_values)
+
+        connexion.commit()
+
+        return jsonify({"message": "Informations de l'utilisateur mises à jour avec succès."})
+    except oracledb.DatabaseError as e:
+        # En cas d'erreur, annulez les modifications et renvoyez un message d'erreur
+        connexion.rollback()
+        error_message = f"Erreur lors de la mise à jour des informations de l'utilisateur : {str(e)}"
+        print(error_message)
+        return jsonify({"message": error_message}), 500
+    finally:
+        cursor.close()
