@@ -5,8 +5,8 @@ import os
 app = Flask(__name__)
 
 
-
-
+# Méthode pour se connecter a la DB
+# Retourne une connexion
 def connecter():
     script_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -28,7 +28,9 @@ def connecter():
 
 connexion = connecter()
 
-import Database_Operation
+# Import des méthodes de Queries.py
+# NE PAS BOUGER, SINON CONNEXION ERREUR
+import Queries
 
 if __name__ == '__main__':
     app.run()
