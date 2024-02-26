@@ -28,9 +28,9 @@ def connecter():
 
 connexion = connecter()
 
-# Import des méthodes de Queries.py
+# Import des méthodes de User_Queries.py
 # NE PAS BOUGER, SINON CONNEXION ERREUR
-import Queries
+import User_Queries
 
 if __name__ == '__main__':
     app.json.sort_keys = False
