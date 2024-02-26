@@ -1,0 +1,129 @@
+from __main__ import app, connexion
+
+import oracledb
+from flask import request, abort, jsonify
+
+
+@app.route('/insert_user', methods=['POST'])
+# Méthode pour insérer un user dans la DB
+# Retourne confirmation d'insertion du user
+def insert_user():
+    data = request.get_json()
+
+    if not all(key in data for key in ('username', 'password', 'email')):
+        abort(400, 'Les données incomplètes pour l\'insertion')
+
+    cursor = connexion.cursor()
+
+    try:
+        cursor.execute("INSERT INTO users (username, password, email) VALUES (:1, :2, :3)",
+                       (data['username'], data['password'], data['email']))
+
+        connexion.commit()
+        print("User ajouté avec succès.")
+        return jsonify({"message": "User ajouté avec succès."})
+    except oracledb.DatabaseError as e:
+        error_message = "Erreur lors de l'ajout du user: " + str(e)
+        print(error_message)
+        connexion.rollback()
+        abort(500, error_message)
+
+    finally:
+        cursor.close()
+
+
+@app.route('/all_users', methods=["GET"])
+# Méthode pour aller chercher tout les utilisateurs
+# Et qui retourne leur id, username, email et role
+def get_all_users():
+    cursor = connexion.cursor()
+
+    try:
+        cursor.execute("""
+            SELECT u.id, u.username, u.email, r.role_name 
+            FROM users u 
+            JOIN Roles r ON u.role_id = r.role_id
+        """)
+        users = cursor.fetchall()
+
+        user_list = []
+
+        for user in users:
+            user_dict = {
+                'id': user[0],
+                'username': user[1],
+                'email': user[2],
+                'role': user[3]
+            }
+            user_list.append(user_dict)
+
+        return jsonify({"users": user_list})
+    except oracledb.DatabaseError as e:
+        error_message = "Erreur lors de la récupération des utilisateurs: " + str(e)
+        print(error_message)
+        abort(500, error_message)
+    finally:
+        cursor.close()
+
+
+@app.route('/get_user', methods=["GET"])
+# Méthode pour chercher un user
+# Retourne l'id, username, email et role du user
+def get_user():
+    user_id = request.args.get('id')
+
+    cursor = connexion.cursor()
+
+    try:
+        cursor.execute(f"""
+            SELECT u.id, u.username, u.email, r.role_name 
+            FROM users u 
+            JOIN Roles r ON u.role_id = r.role_id
+            WHERE u.id = {user_id}
+        """)
+        user = cursor.fetchone()
+
+        if user:
+            user_dict = {
+                'id': user[0],
+                'username': user[1],
+                'email': user[2],
+                'role': user[3]
+            }
+            return jsonify({"user": user_dict})
+        else:
+            return jsonify({"message": "Utilisateur non trouvé."}), 404
+    except oracledb.DatabaseError as e:
+        error_message = f"Erreur lors de la récuparation de l'utilisateur avec l'ID {user_id}: {str(e)}"
+        print(error_message)
+        return jsonify({"message": error_message}), 500
+    finally:
+        cursor.close()
+
+
+@app.route('/delete_user', methods=["POST"])
+# Méthode pour supprimer un user a l'aide de son id
+# Retourne confirmation de la suppression du user
+def delete_user():
+    data = request.get_json()
+
+    if 'id' not in data:
+        return jsonify({"message": "ID de l'utilisateur inexistant."}), 400
+
+    user_id = data['id']
+    cursor = connexion.cursor()
+
+    try:
+        cursor.execute("DELETE FROM users WHERE id = :1", (user_id,))
+
+        connexion.commit()
+
+        return jsonify({"message": f"Utilisateur avec l'ID {user_id} supprimé avec succès."})
+    except oracledb.DatabaseError as e:
+        # En cas d'erreur on rollback
+        connexion.rollback()
+        error_message = f"Erreur lors de la suppression de l'utilisateur avec l'ID {user_id}: {str(e)}"
+        print(error_message)
+        return jsonify({"message": error_message}), 500
+    finally:
+        cursor.close()
