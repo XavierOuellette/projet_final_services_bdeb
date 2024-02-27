@@ -1,5 +1,4 @@
 from __main__ import app, connexion
-
 import oracledb
 from flask import request, abort, jsonify
 
@@ -40,9 +39,10 @@ def get_all_users():
 
     try:
         cursor.execute("""
-            SELECT u.id, u.username, u.email, r.role_name 
-            FROM users u 
-            JOIN Roles r ON u.role_id = r.role_id
+            SELECT u.user_id, u.username, u.email, r.role_name
+            FROM Users u
+            JOIN Roles r ON u.role_name = r.role_name
+            ORDER BY u.user_id ASC
         """)
         users = cursor.fetchall()
 
@@ -50,7 +50,7 @@ def get_all_users():
 
         for user in users:
             user_dict = {
-                'id': user[0],
+                'user_id': user[0],
                 'username': user[1],
                 'email': user[2],
                 'role': user[3]
@@ -70,22 +70,22 @@ def get_all_users():
 # Méthode pour chercher un user
 # Retourne l'id, username, email et role du user
 def get_user():
-    user_id = request.args.get('id')
+    user_id = request.args.get('user_id')
 
     cursor = connexion.cursor()
 
     try:
         cursor.execute(f"""
-            SELECT u.id, u.username, u.email, r.role_name 
-            FROM users u 
-            JOIN Roles r ON u.role_id = r.role_id
-            WHERE u.id = {user_id}
+            SELECT u.user_id, u.username, u.email, r.role_name
+            FROM Users u
+            JOIN Roles r ON u.role_name = r.role_name
+            WHERE u.user_id = {user_id}
         """)
         user = cursor.fetchone()
 
         if user:
             user_dict = {
-                'id': user[0],
+                'user_id': user[0],
                 'username': user[1],
                 'email': user[2],
                 'role': user[3]
@@ -107,14 +107,14 @@ def get_user():
 def delete_user():
     data = request.get_json()
 
-    if 'id' not in data:
+    if 'user_id' not in data:
         return jsonify({"message": "ID de l'utilisateur inexistant."}), 400
 
-    user_id = data['id']
+    user_id = data['user_id']
     cursor = connexion.cursor()
 
     try:
-        cursor.execute("DELETE FROM users WHERE id = :1", (user_id,))
+        cursor.execute("DELETE FROM users WHERE user_id = :1", (user_id,))
 
         connexion.commit()
 
@@ -135,13 +135,15 @@ def delete_user():
 def update_user():
     data = request.get_json()
 
-    if 'id' not in data:
+    data = {key.lower(): value for key, value in data.items()} # NE PAS TOUCHER, SINON PROBLÈME
+    if 'user_id' not in data:
         return jsonify({"message": "L'ID de l'utilisateur est manquant."}), 400
 
     # Récupérez les données de l'utilisateur à partir du corps de la requête
-    user_id = data['id']
+    user_id = data['user_id']
     new_username = data.get('username')
     new_email = data.get('email')
+    new_role = data.get('role_name')
 
     # Vérifiez si au moins l'une des données à mettre à jour est présente
     if not any([new_username, new_email]):
@@ -159,12 +161,15 @@ def update_user():
         if new_email:
             update_query += " email = :2,"
             update_values.append(new_email)
+        if new_role:
+            update_query += " role_name = :3,"
+            update_values.append(new_role)
 
         # Supprimez la virgule supplémentaire à la fin de la requête de mise à jour
         update_query = update_query.rstrip(',')
 
         # Ajoutez la clause WHERE pour filtrer par ID utilisateur
-        update_query += f" WHERE id = {user_id}"
+        update_query += f" WHERE user_id = {user_id}"
         cursor.execute(update_query, update_values)
 
         connexion.commit()
@@ -180,37 +185,3 @@ def update_user():
         cursor.close()
 
 
-@app.route('/update_role', methods=["POST"])
-# Méthode pour mettre à jour le rôle d'un user
-# Retourne confirmation du changement
-def update_role():
-    data = request.get_json()
-
-    if not all(key in data for key in ('id', 'role_id')):
-        abort(400, "Les données fournies sont incomplètes pour la mise à jour du rôle")
-
-    user_id = data['id']
-    new_role_id = data['role_id']
-
-    cursor = connexion.cursor()
-
-    try:
-        # Vérifiez si l'utilisateur existe
-        cursor.execute("SELECT COUNT(*) FROM users WHERE id = :1", (user_id,))
-        user_count = cursor.fetchone()[0]
-
-        if user_count == 0:
-            return jsonify({"message": f"L'utilisateur avec l'ID {user_id} n'existe pas"}), 404
-
-        cursor.execute("UPDATE users SET role_id = :1 WHERE id = :2", (new_role_id, user_id))
-
-        connexion.commit()
-
-        return jsonify({"message": f"Le rôle de l'utilisateur avec l'ID {user_id} a été mis à jour avec succès"})
-    except oracledb.DatabaseError as e:
-        error_message = f"Erreur lors de la mise à jour du rôle de l'utilisateur avec l'ID {user_id}: {str(e)}"
-        print(error_message)
-        connexion.rollback()
-        return jsonify({"message": error_message}), 500
-    finally:
-        cursor.close()
