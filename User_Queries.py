@@ -101,7 +101,7 @@ def get_user():
         cursor.close()
 
 
-@app.route('/delete_user', methods=["POST"])
+@app.route('/delete_user', methods=["DELETE"])
 # Méthode pour supprimer un user a l'aide de son id
 # Retourne confirmation de la suppression du user
 def delete_user():
