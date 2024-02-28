@@ -1,8 +1,10 @@
 from flask import Flask, jsonify, abort
+from flask_cors import CORS
 import oracledb
 import os
 
 app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "https://localhost:7012"}})
 
 
 # Méthode pour se connecter a la DB
