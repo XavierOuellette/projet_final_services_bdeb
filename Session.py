@@ -3,6 +3,7 @@ import secrets
 import string
 from __main__ import app, connection
 from datetime import datetime, timedelta
+import bcrypt
 
 import oracledb
 from flask import request, abort, jsonify
@@ -77,17 +78,17 @@ def validate_login():
 
     cursor = connection.cursor()
 
-    # Hasher le mot de passe
-    hashed_password = hashlib.sha256(password.encode()).hexdigest()
-
     # Requête pour l'utilisateur et son mot de passe
-    query = "SELECT user_id FROM USERS WHERE username = :username AND password = :password"
-    cursor.execute(query, {'username': username, 'password': hashed_password})
-    user_id = cursor.fetchone()[0]
+    query = f"SELECT user_id, password FROM USERS WHERE username = '{username}'"
+    cursor.execute(query)
+    data = cursor.fetchone()
 
+    if not data or bcrypt.checkpw(password, data[1]):
+        return jsonify({"error": "Crédentiels invalide"}), 200
+
+    user_id = data[0]
     if user_id:
         session_id = generate_session_id()
-        expiration_time = datetime.now() + timedelta(minutes=SESSION_LENGTH)
 
         # Insérer la nouvelle session dans la base de données
         insert_query = (

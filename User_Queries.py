@@ -2,6 +2,7 @@ import hashlib
 from __main__ import app, connection
 import oracledb
 from flask import request, abort, jsonify
+import bcrypt
 
 
 @app.route('/insert_user', methods=['POST'])
@@ -16,8 +17,10 @@ def insert_user():
     cursor = connection.cursor()
 
     try:
-        # Hash the password using SHA-256
-        hashed_password = hashlib.sha256(data['password'].encode()).hexdigest()
+        # Hash + salt en utilisant bcrypt
+        bytes_password = str.encode(data['password'])
+        salt = bcrypt.gensalt()
+        hashed_password = bcrypt.hashpw(password=bytes_password, salt=salt)
 
         cursor.execute("INSERT INTO users (username, password, email) VALUES (:1, :2, :3)",
                        (data['username'], hashed_password, data['email']))
