@@ -29,17 +29,11 @@ def validate_session(session_id, ip_address, user_agent):
     if session_info:
         user_id, expires_at, stored_ip_address, stored_user_agent = session_info
         if expires_at and expires_at < datetime.now():
-            print("Session has expired.")
-            # TODO: Implémenter
-            return False
+            return jsonify({"error": "Session expirée."})
         elif stored_ip_address != ip_address:
-            print("IP address does not match.")
-            # TODO: Implémenter
-            return False
+            return jsonify({"error": "Addresse IP invalide."})
         elif stored_user_agent != user_agent:
-            print("User agent does not match.")
-            # TODO: Implémenter
-            return False
+            return jsonify({"error": "User agent invalide."})
         else:
             print("Session is valid for user:", user_id)
             # Prolonge la durée de la session
@@ -52,9 +46,7 @@ def validate_session(session_id, ip_address, user_agent):
             connection.commit()
             return True
     else:
-        print("Invalid session ID.")
-        # TODO: Implémenter
-        return False
+        return jsonify({"error": "ID de session invalide."})
 
 
 # Valide les crédentiels de connexion et utilise l'addresse ip et user_agent
@@ -83,5 +75,4 @@ def validate_login(username, password, ip_address, user_agent):
 
         return jsonify({"session_id": session_id})
     else:
-        # TODO: Implémenter
-        return None
+        return jsonify({"error": "Crédentiels invalident."})
