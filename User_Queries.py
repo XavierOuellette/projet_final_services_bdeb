@@ -1,4 +1,4 @@
-from __main__ import app, connexion
+from __main__ import app, connection
 import oracledb
 from flask import request, abort, jsonify
 
@@ -12,7 +12,7 @@ def insert_user():
     if not all(key in data for key in ('username', 'password', 'email')):
         abort(400, 'Les données incomplètes pour l\'insertion')
 
-    cursor = connexion.cursor()
+    cursor = connection.cursor()
 
     try:
         # Hash the password using SHA-256
@@ -21,13 +21,13 @@ def insert_user():
         cursor.execute("INSERT INTO users (username, password, email) VALUES (:1, :2, :3)",
                        (data['username'], hashed_password, data['email']))
 
-        connexion.commit()
+        connection.commit()
         print("User ajouté avec succès.")
         return jsonify({"message": "User ajouté avec succès."})
     except oracledb.DatabaseError as e:
         error_message = "Erreur lors de l'ajout du user: " + str(e)
         print(error_message)
-        connexion.rollback()
+        connection.rollback()
         abort(500, error_message)
 
     finally:
@@ -38,7 +38,7 @@ def insert_user():
 # Méthode pour aller chercher tout les utilisateurs
 # Et qui retourne leur id, username, email et role
 def get_all_users():
-    cursor = connexion.cursor()
+    cursor = connection.cursor()
 
     try:
         cursor.execute("""
@@ -75,7 +75,7 @@ def get_all_users():
 def get_user():
     user_id = request.args.get('user_id')
 
-    cursor = connexion.cursor()
+    cursor = connection.cursor()
 
     try:
         cursor.execute(f"""
@@ -114,17 +114,17 @@ def delete_user():
         return jsonify({"message": "ID de l'utilisateur inexistant."}), 400
 
     user_id = data['user_id']
-    cursor = connexion.cursor()
+    cursor = connection.cursor()
 
     try:
         cursor.execute("DELETE FROM users WHERE user_id = :1", (user_id,))
 
-        connexion.commit()
+        connection.commit()
 
         return jsonify({"message": f"Utilisateur avec l'ID {user_id} supprimé avec succès."})
     except oracledb.DatabaseError as e:
         # En cas d'erreur on rollback
-        connexion.rollback()
+        connection.rollback()
         error_message = f"Erreur lors de la suppression de l'utilisateur avec l'ID {user_id}: {str(e)}"
         print(error_message)
         return jsonify({"message": error_message}), 500
@@ -152,7 +152,7 @@ def update_user():
     if not any([new_username, new_email]):
         return jsonify({"message": "Aucune donnée à mettre à jour n'a été fournie."}), 400
 
-    cursor = connexion.cursor()
+    cursor = connection.cursor()
 
     try:
         update_query = "UPDATE users SET"
@@ -175,12 +175,12 @@ def update_user():
         update_query += f" WHERE user_id = {user_id}"
         cursor.execute(update_query, update_values)
 
-        connexion.commit()
+        connection.commit()
 
         return jsonify({"message": "Informations de l'utilisateur mises à jour avec succès."})
     except oracledb.DatabaseError as e:
         # En cas d'erreur, annulez les modifications et renvoyez un message d'erreur
-        connexion.rollback()
+        connection.rollback()
         error_message = f"Erreur lors de la mise à jour des informations de l'utilisateur : {str(e)}"
         print(error_message)
         return jsonify({"message": error_message}), 500
