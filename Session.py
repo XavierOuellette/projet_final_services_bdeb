@@ -34,30 +34,6 @@ def validate_session(session_id):
         return False
 
 
-# Check if the provided username and password are valid
-    query = "SELECT user_id FROM USERS WHERE username = :username AND password = :password"
-    cursor.execute(query, {'username': username, 'password': password})
-    user_id = cursor.fetchone()
-
-    if user_id:
-        # If login is successful, generate a new session ID
-        session_id = generate_session_id()
-
-        # Calculate session expiration time (e.g., 1 day from now)
-        expiration_time = datetime.now() + timedelta(days=1)
-
-        # Insert the new session into the Sessions table
-        insert_query = "INSERT INTO Sessions (session_id, user_id, expires_at) VALUES (:session_id, :user_id, :expires_at)"
-        cursor.execute(insert_query, {'session_id': session_id, 'user_id': user_id[0], 'expires_at': expiration_time})
-        connection.commit()
-
-        # Return the session ID
-        return session_id
-    else:
-        # If login failed, return None
-        return None
-
-
 # Function to validate login credentials and create a new session
 def validate_login(username, password, ip_address, user_agent):
     cursor = connection.cursor()
