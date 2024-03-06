@@ -51,10 +51,21 @@ def validate_session(session_id, ip_address, user_agent):
 
 # Valide les crédentiels de connexion et utilise l'addresse ip et user_agent
 @app.route('/validate_login', methods=["POST"])
-def validate_login(username, password, ip_address, user_agent):
+def validate_login():
+    # Récupérer les données du corps de la requête
+    data = request.json
+
+    username = data.get('username')
+    password = data.get('password')
+    ip_address = data.get('ip_address')
+    user_agent = data.get('user_agent')
+
+    if not all([username, password, ip_address, user_agent]):
+        return jsonify({"error": "Certains paramètres sont manquants."}), 400
+
     cursor = connection.cursor()
 
-    # Hash le mot de passe
+    # Hasher le mot de passe
     hashed_password = hashlib.sha256(password.encode()).hexdigest()
 
     # Requête pour l'utilisateur et son mot de passe
@@ -66,13 +77,13 @@ def validate_login(username, password, ip_address, user_agent):
         session_id = generate_session_id()
         expiration_time = datetime.now() + timedelta(minutes=SESSION_LENGTH)
 
-        # Insère la nouvelle session dans la base de données
+        # Insérer la nouvelle session dans la base de données
         insert_query = ("INSERT INTO Sessions (session_id, user_id, expires_at, ip_address, user_agent) VALUES ("
                         ":session_id, :user_id, :expires_at, :ip_address, :user_agent)")
         cursor.execute(insert_query, {'session_id': session_id, 'user_id': user_id[0], 'expires_at': expiration_time,
                                       'ip_address': ip_address, 'user_agent': user_agent})
         connection.commit()
 
-        return jsonify({"session_id": session_id})
+        return jsonify({"session_id": session_id}), 200
     else:
-        return jsonify({"error": "Crédentiels invalident."})
+        return jsonify({"error": "Crédentiels invalides."}), 401
