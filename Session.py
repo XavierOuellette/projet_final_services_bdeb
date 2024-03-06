@@ -81,7 +81,7 @@ def validate_login(username, password, ip_address, user_agent):
                                       'ip_address': ip_address, 'user_agent': user_agent})
         connection.commit()
 
-        return session_id
+        return jsonify({"session_id": session_id})
     else:
         # TODO: Implémenter
         return None
