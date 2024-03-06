@@ -12,7 +12,7 @@ def generate_session_id(length=64):
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 
-def validate_session(session_id):
+def validate_session(session_id, ip_address, user_agent):
     cursor = connection.cursor()
     query = "SELECT user_id, expires_at FROM Sessions WHERE session_id = :session_id"
     cursor.execute(query, {'session_id': session_id})
