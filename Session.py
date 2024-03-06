@@ -1,11 +1,15 @@
+import hashlib
 import secrets
 import string
 from __main__ import app, connection
+from datetime import datetime, timedelta
+
 import oracledb
 from flask import request, abort, jsonify
 
 # In minutes
 SESSION_LENGTH = 15
+
 
 def generate_session_id(length=64):
     alphabet = string.ascii_letters + string.digits + '-_'
@@ -61,11 +65,13 @@ def validate_login(username, password, ip_address, user_agent):
         session_id = generate_session_id()
 
         # Calculate session expiration time
-        expiration_time = datetime.now() + timedelta(minute=SESSION_LENGTH)
+        expiration_time = datetime.now() + timedelta(minutes=SESSION_LENGTH)
 
         # Insert the new session into the Sessions table
-        insert_query = "INSERT INTO Sessions (session_id, user_id, expires_at, ip_address, user_agent) VALUES (:session_id, :user_id, :expires_at, :ip_address, :user_agent)"
-        cursor.execute(insert_query, {'session_id': session_id, 'user_id': user_id[0], 'expires_at': expiration_time, 'ip_address': ip_address, 'user_agent': user_agent})
+        insert_query = ("INSERT INTO Sessions (session_id, user_id, expires_at, ip_address, user_agent) VALUES ("
+                        ":session_id, :user_id, :expires_at, :ip_address, :user_agent)")
+        cursor.execute(insert_query, {'session_id': session_id, 'user_id': user_id[0], 'expires_at': expiration_time,
+                                      'ip_address': ip_address, 'user_agent': user_agent})
         connection.commit()
 
         # Return the session ID

@@ -1,3 +1,4 @@
+import hashlib
 from __main__ import app, connection
 import oracledb
 from flask import request, abort, jsonify
