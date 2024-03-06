@@ -73,27 +73,3 @@ def validate_login(username, password, ip_address, user_agent):
     else:
         # If login failed, return None
         return None
-
-
-# Function to create a new user with encrypted password
-def create_user(username, password, role_name, email):
-    cursor = connection.cursor()
-
-    # Check if the username is already taken
-    query = "SELECT COUNT(*) FROM USERS WHERE username = :username"
-    cursor.execute(query, {'username': username})
-    user_exists = cursor.fetchone()[0]
-
-    if user_exists:
-        print("Username already exists.")
-        return False
-    else:
-        # Hash the password using SHA-256
-        hashed_password = hashlib.sha256(password.encode()).hexdigest()
-
-        # Insert the new user into the USERS table
-        insert_query = "INSERT INTO USERS (username, password, role_name, email) VALUES (:username, :password, :role_name, :email)"
-        cursor.execute(insert_query, {'username': username, 'password': hashed_password, 'role_name': role_name, 'email': email})
-        connection.commit()
-        print("User created successfully.")
-        return True

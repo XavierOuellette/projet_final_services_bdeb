@@ -15,8 +15,11 @@ def insert_user():
     cursor = connexion.cursor()
 
     try:
+        # Hash the password using SHA-256
+        hashed_password = hashlib.sha256(data['password'].encode()).hexdigest()
+
         cursor.execute("INSERT INTO users (username, password, email) VALUES (:1, :2, :3)",
-                       (data['username'], data['password'], data['email']))
+                       (data['username'], hashed_password, data['email']))
 
         connexion.commit()
         print("User ajouté avec succès.")
