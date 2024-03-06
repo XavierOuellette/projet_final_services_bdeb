@@ -83,17 +83,19 @@ def validate_login():
     # Requête pour l'utilisateur et son mot de passe
     query = "SELECT user_id FROM USERS WHERE username = :username AND password = :password"
     cursor.execute(query, {'username': username, 'password': hashed_password})
-    user_id = cursor.fetchone()
+    user_id = cursor.fetchone()[0]
 
     if user_id:
         session_id = generate_session_id()
         expiration_time = datetime.now() + timedelta(minutes=SESSION_LENGTH)
 
         # Insérer la nouvelle session dans la base de données
-        insert_query = ("INSERT INTO Sessions (session_id, user_id, expires_at, ip_address, user_agent) VALUES ("
-                        ":session_id, :user_id, :expires_at, :ip_address, :user_agent)")
-        cursor.execute(insert_query, {'session_id': session_id, 'user_id': user_id[0], 'expires_at': expiration_time,
-                                      'ip_address': ip_address, 'user_agent': user_agent})
+        insert_query = (
+            "INSERT INTO Sessions (session_id, user_id, expires_at, ip_address, user_agent) "
+            f"VALUES ('{session_id}', {user_id}, SYSTIMESTAMP + INTERVAL '{SESSION_LENGTH}' MINUTE, '{ip_address}', '{user_agent}')"
+        )
+
+        cursor.execute(insert_query)
         connection.commit()
 
         return jsonify({"session_id": session_id}), 200
