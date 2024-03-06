@@ -4,6 +4,9 @@ from __main__ import app, connexion
 import oracledb
 from flask import request, abort, jsonify
 
+# In minutes
+SESSION_LENGTH = 15
+
 def generate_session_id(length=64):
     alphabet = string.ascii_letters + string.digits + '-_'
     return ''.join(secrets.choice(alphabet) for _ in range(length))
@@ -28,6 +31,13 @@ def validate_session(session_id):
             return False
         else:
             print("Session is valid for user:", user_id)
+            update_query = """
+                UPDATE Sessions
+                SET length = CURRENT_TIMESTAMP + INTERVAL :session_length MINUTE
+                WHERE session_id = :session_id
+            """
+            cursor.execute(update_query, {'session_length': SESSION_LENGTH, 'session_id': session_id})
+            connection.commit()
             return True
     else:
         print("Invalid session ID.")
@@ -51,7 +61,7 @@ def validate_login(username, password, ip_address, user_agent):
         session_id = generate_session_id()
 
         # Calculate session expiration time
-        expiration_time = datetime.now() + timedelta(minute=15)
+        expiration_time = datetime.now() + timedelta(minute=SESSION_LENGTH)
 
         # Insert the new session into the Sessions table
         insert_query = "INSERT INTO Sessions (session_id, user_id, expires_at, ip_address, user_agent) VALUES (:session_id, :user_id, :expires_at, :ip_address, :user_agent)"
