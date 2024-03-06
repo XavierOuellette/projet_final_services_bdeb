@@ -1,6 +1,6 @@
 import secrets
 import string
-from __main__ import app, connexion
+from __main__ import app, connection
 import oracledb
 from flask import request, abort, jsonify
 
