@@ -28,11 +28,12 @@ def connecter():
         abort(500, error_message)
 
 
-connexion = connecter()
+connection = connecter()
 
 # Import des méthodes de User_Queries.py
 # NE PAS BOUGER, SINON CONNEXION ERREUR
 import User_Queries
+import Session
 
 if __name__ == '__main__':
     app.json.sort_keys = False
