@@ -12,13 +12,6 @@ from Session import validate_session
 # Retourne confirmation d'insertion du user
 def insert_user():
     data = request.get_json()
-    session_id = data.get('session_id')
-    ip_address = data.get('ip_address')
-    user_agent = data.get('user_agent')
-
-    validation_response = validate_session(session_id, ip_address, user_agent)
-    if 'error' in validation_response:
-        return validation_response
 
     if not all(key in data for key in ('username', 'password', 'email')):
         abort(400, 'Les données incomplètes pour l\'insertion')
