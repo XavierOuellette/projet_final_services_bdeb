@@ -42,6 +42,7 @@ def validate_session(session_id, ip_address, user_agent):
             cursor = connection.cursor()
             cursor.execute(update_query)
             connection.commit()
+            cursor.close()
             return jsonify({"message": "Valide"}), 200
     else:
         return jsonify({"error": "ID de session invalide."}), 401
@@ -83,6 +84,7 @@ def validate_login():
 
         cursor.execute(insert_query)
         connection.commit()
+        cursor.close()
 
         return jsonify({"session_id": session_id}), 200
     else:
