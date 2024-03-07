@@ -19,6 +19,9 @@ def generate_session_id(length=64):
 
 # Vérifie qu'une session est valide
 def validate_session(session_id, ip_address, user_agent):
+    if not all([session_id, ip_address, user_agent]):
+        return jsonify({"error": "Certains paramètres sont manquants."}), 400
+
     cursor = connection.cursor()
 
     # Requête pour la session id
@@ -26,7 +29,7 @@ def validate_session(session_id, ip_address, user_agent):
     cursor.execute(query, {'session_id': session_id})
     session_info = cursor.fetchone()
 
-    if session_info:
+    if session_info is not None:
         expires_at, stored_ip_address, stored_user_agent = session_info
         if expires_at and expires_at < datetime.now():
             return jsonify({"error": "Session expirée."}), 401
