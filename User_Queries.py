@@ -203,7 +203,6 @@ def update_user():
             update_query += f" username = {new_username},"
         if new_email:
             update_query += f" email = {new_email},"
-            update_values.append(new_email)
         if new_role:
             update_query += f" role_name = {new_role},"
 
