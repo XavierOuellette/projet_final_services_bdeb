@@ -4,12 +4,21 @@ import oracledb
 from flask import request, abort, jsonify
 import bcrypt
 
+from Session import validate_session
+
 
 @app.route('/insert_user', methods=['POST'])
 # Méthode pour insérer un user dans la DB
 # Retourne confirmation d'insertion du user
 def insert_user():
     data = request.get_json()
+    session_id = data.get('session_id')
+    ip_address = data.get('ip_address')
+    user_agent = data.get('user_agent')
+
+    validation_response = validate_session(session_id, ip_address, user_agent)
+    if 'error' in validation_response:
+        return validation_response
 
     if not all(key in data for key in ('username', 'password', 'email')):
         abort(400, 'Les données incomplètes pour l\'insertion')
@@ -42,6 +51,14 @@ def insert_user():
 # Méthode pour aller chercher tout les utilisateurs
 # Et qui retourne leur id, username, email et role
 def get_all_users():
+    session_id = request.args.get('session_id')
+    ip_address = request.args.get('ip_address')
+    user_agent = request.args.get('user_agent')
+
+    validation_response = validate_session(session_id, ip_address, user_agent)
+    if 'error' in validation_response:
+        return validation_response
+
     cursor = connection.cursor()
 
     try:
@@ -78,6 +95,13 @@ def get_all_users():
 # Retourne l'id, username, email et role du user
 def get_user():
     user_id = request.args.get('user_id')
+    session_id = request.args.get('session_id')
+    ip_address = request.args.get('ip_address')
+    user_agent = request.args.get('user_agent')
+
+    validation_response = validate_session(session_id, ip_address, user_agent)
+    if 'error' in validation_response:
+        return validation_response
 
     cursor = connection.cursor()
 
@@ -113,6 +137,13 @@ def get_user():
 # Retourne confirmation de la suppression du user
 def delete_user():
     data = request.get_json()
+    session_id = data.get('session_id')
+    ip_address = data.get('ip_address')
+    user_agent = data.get('user_agent')
+
+    validation_response = validate_session(session_id, ip_address, user_agent)
+    if 'error' in validation_response:
+        return validation_response
 
     if 'user_id' not in data:
         return jsonify({"message": "ID de l'utilisateur inexistant."}), 400
@@ -141,6 +172,13 @@ def delete_user():
 # Retourne confirmation de changement
 def update_user():
     data = request.get_json()
+    session_id = data.get('session_id')
+    ip_address = data.get('ip_address')
+    user_agent = data.get('user_agent')
+
+    validation_response = validate_session(session_id, ip_address, user_agent)
+    if 'error' in validation_response:
+        return validation_response
 
     data = {key.lower(): value for key, value in data.items()} # NE PAS TOUCHER, SINON PROBLÈME
     if 'user_id' not in data:

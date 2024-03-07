@@ -2,11 +2,11 @@ import hashlib
 import secrets
 import string
 from __main__ import app, connection
-from datetime import datetime, timedelta
+from datetime import datetime
 import bcrypt
 
 import oracledb
-from flask import request, abort, jsonify
+from flask import request, jsonify
 
 # In minutes
 SESSION_LENGTH = 15
@@ -17,22 +17,8 @@ def generate_session_id(length=64):
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 
-# Valide la session avec son id, ip_address et user_agent
-from flask import request
-
-
-@app.route('/validate_session', methods=["POST"])
-def validate_session():
-    # Récupérer les données du corps de la requête
-    data = request.json
-
-    session_id = data.get('session_id')
-    ip_address = data.get('ip_address')
-    user_agent = data.get('user_agent')
-
-    if not all([session_id, ip_address, user_agent]):
-        return jsonify({"error": "Certains paramètres sont manquants."}), 400
-
+# Vérifie qu'une session est valide
+def validate_session(session_id, ip_address, user_agent):
     cursor = connection.cursor()
 
     # Requête pour la session id
@@ -41,7 +27,7 @@ def validate_session():
     session_info = cursor.fetchone()
 
     if session_info:
-        user_id, expires_at, stored_ip_address, stored_user_agent = session_info
+        expires_at, stored_ip_address, stored_user_agent = session_info
         if expires_at and expires_at < datetime.now():
             return jsonify({"error": "Session expirée."}), 401
         elif stored_ip_address != ip_address:
@@ -49,15 +35,14 @@ def validate_session():
         elif stored_user_agent != user_agent:
             return jsonify({"error": "User agent invalide."}), 401
         else:
-            print("Session valide pour l'utilisateur:", user_id)
-            # Prolonger la durée de la session
+            # Prolonge la durée de la session
             update_query = (f"UPDATE Sessions SET expires_at = SYSTIMESTAMP + INTERVAL '{SESSION_LENGTH}' MINUTE WHERE "
                             f"session_id = '{session_id}'")
 
             cursor = connection.cursor()
             cursor.execute(update_query)
             connection.commit()
-            return jsonify({"message": "Session valide pour l'utilisateur.", "user_id": user_id}), 200
+            return jsonify({"message": "Valide"}), 200
     else:
         return jsonify({"error": "ID de session invalide."}), 401
 
