@@ -198,24 +198,21 @@ def update_user():
 
     try:
         update_query = "UPDATE users SET"
-        update_values = []
 
         if new_username:
-            update_query += " username = :1,"
-            update_values.append(new_username)
+            update_query += f" username = {new_username},"
         if new_email:
-            update_query += " email = :2,"
+            update_query += f" email = {new_email},"
             update_values.append(new_email)
         if new_role:
-            update_query += " role_name = :3,"
-            update_values.append(new_role)
+            update_query += f" role_name = {new_role},"
 
         # Supprimez la virgule supplémentaire à la fin de la requête de mise à jour
         update_query = update_query.rstrip(',')
 
         # Ajoutez la clause WHERE pour filtrer par ID utilisateur
         update_query += f" WHERE user_id = {user_id}"
-        cursor.execute(update_query, update_values)
+        cursor.execute(update_query)
 
         connection.commit()
 
