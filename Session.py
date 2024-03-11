@@ -1,4 +1,3 @@
-import hashlib
 import secrets
 import string
 from __main__ import app, connection
