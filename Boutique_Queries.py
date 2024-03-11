@@ -144,3 +144,56 @@ def delete_item():
         return jsonify({"message": error_message}), 500
     finally:
         cursor.close()
+
+
+@app.route('/update_item', methods=["POST"])
+def update_item():
+    data = request.get_json()
+
+    data = {key.lower(): value for key, value in data.items()}  # NE PAS TOUCHER, SINON PROBLÈME
+    if 'id' not in data:
+        return jsonify({"message": "L'ID de l'item est inexistant."}), 400
+
+    id = data['id']
+    new_name = data.get('name')
+    new_description = data.get('description')
+    new_price = data.get('price')
+    new_image = data.get('image_path')
+    new_available = data.get('available')
+
+    if not any([new_name, new_description, new_price, new_image, new_available]):
+        return jsonify({"message": "Aucune donnée à mettre à jour n'a été fournie."}), 400
+
+    cursor = connection.cursor()
+
+    try:
+        update_query = "UPDATE products SET"
+
+        updates = []
+        if new_name:
+            updates.append(f" name = '{new_name}'")
+        if new_description:
+            updates.append(f" description = '{new_description}'")
+        if new_price:
+            updates.append(f" price = {new_price}")
+        if new_image:
+            updates.append(f" image_path = '{new_image}'")
+        if new_available is not None:
+            updates.append(f" available = {new_available}")
+
+        update_query += ', '.join(updates)
+        update_query += f" WHERE id = {id}"
+
+        cursor.execute(update_query)
+
+        connection.commit()
+
+        return jsonify({"message": "Informations de l'item mises à jour avec succès."})
+    except oracledb.DatabaseError as e:
+        connection.rollback()
+        error_message = f"Erreur lors de la mise à jour des informations de l'item : {str(e)}"
+        print(error_message)
+        return jsonify({"message": error_message}), 500
+    finally:
+        cursor.close()
+
