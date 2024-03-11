@@ -113,3 +113,34 @@ def get_item():
         return jsonify({"message": error_message}), 500
     finally:
         cursor.close()
+
+
+@app.route('/delete_item', methods=["DELETE"])
+# Méthode pour supprimer un item a l'aide de son id
+# Retourne confirmation de la suppression de l'item
+def delete_item():
+    data = request.get_json()
+    # session_id = data.get('session_id')
+    # ip_address = data.get('ip_address')
+    # user_agent = data.get('user_agent')
+
+    if 'id' not in data:
+        return jsonify({"message": "ID de l'item inexistant."}), 400
+
+    id = data['id']
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute("DELETE FROM products WHERE id = :1", (id,))
+
+        connection.commit()
+
+        return jsonify({"message": f"Item avec l'ID {id} supprimé avec succès."})
+    except oracledb.DatabaseError as e:
+        # En cas d'erreur on rollback
+        connection.rollback()
+        error_message = f"Erreur lors de la suppression de l'item avec l'ID {id}: {str(e)}"
+        print(error_message)
+        return jsonify({"message": error_message}), 500
+    finally:
+        cursor.close()
