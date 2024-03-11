@@ -86,6 +86,7 @@ def get_all_users():
 # Méthode pour chercher un user
 # Retourne l'id, username, email et role du user
 def get_user():
+    username = request.args.get('username')
     user_id = request.args.get('user_id')
     session_id = request.args.get('session_id')
     ip_address = request.args.get('ip_address')
@@ -102,7 +103,7 @@ def get_user():
             SELECT u.user_id, u.username, u.email, r.role_name
             FROM Users u
             JOIN Roles r ON u.role_name = r.role_name
-            WHERE u.user_id = {user_id}
+            WHERE u.username = '{username}'
         """)
         user = cursor.fetchone()
 

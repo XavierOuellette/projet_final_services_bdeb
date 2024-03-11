@@ -32,7 +32,6 @@ def insert_item():
         cursor.close()
 
 
-
 @app.route('/all_items', methods=["GET"])
 # Méthode pour aller chercher tout les items
 # Et qui retourne leur id, name, description, price et image
@@ -48,9 +47,8 @@ def get_all_items():
 
     try:
         cursor.execute("""
-            SELECT p.id, p.name, p.description, p.price, p.image_path
+            SELECT p.id, p.name, p.description, p.price, p.image_path, p.available
             FROM Products p
-            WHERE p.available = 1
             ORDER BY p.id ASC
         """)
         items = cursor.fetchall()
@@ -63,7 +61,8 @@ def get_all_items():
                 'name': item[1],
                 'description': item[2],
                 'price': item[3],
-                'image_path': item[4]
+                'image_path': item[4],
+                'available': item[5]
             }
             items_list.append(item_dict)
 
@@ -72,5 +71,45 @@ def get_all_items():
         error_message = "Erreur lors de la récupération des items: " + str(e)
         print(error_message)
         abort(500, error_message)
+    finally:
+        cursor.close()
+
+
+@app.route('/get_item', methods=["GET"])
+# Méthode pour chercher un item
+# Retourne l'id, name, description, price et image_path
+def get_item():
+    # id = request.args.get('id')
+    name = request.args.get('name').lower()
+    # description = request.args.get('description')
+    # price = request.args.get('price')
+    # image_path = request.args.get('image_path')
+
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute(f"""
+            SELECT p.id, p.name, p.description, p.price, p.image_path, p.available
+            FROM Products p
+            WHERE p.name = '{name}'
+        """)
+        item = cursor.fetchone()
+
+        if item:
+            item_dict = {
+                'id': item[0],
+                'name': item[1],
+                'description': item[2],
+                'price': item[3],
+                'image_path': item[4],
+                'available': item[5]
+            }
+            return jsonify({"item": item_dict})
+        else:
+            return jsonify({"message": "Item non trouvé."}), 404
+    except oracledb.DatabaseError as e:
+        error_message = f"Erreur lors de la récuparation de l'item avec le nom {name}: {str(e)}"
+        print(error_message)
+        return jsonify({"message": error_message}), 500
     finally:
         cursor.close()
