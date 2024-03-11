@@ -34,6 +34,7 @@ connection = connecter()
 # NE PAS BOUGER, SINON CONNEXION ERREUR
 import User_Queries
 import Session
+import Boutique_Queries
 
 if __name__ == '__main__':
     app.json.sort_keys = False
