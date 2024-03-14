@@ -27,10 +27,10 @@ def insert_item():
     cursor = connection.cursor()
 
     try:
-        cursor.execute(
-            "INSERT INTO products (name, description, price, image_path, available) VALUES (:1, :2, :3, :4, :5)",
-            (data['name'], data['description'], data['price'], data.get('image_path', None), data.get('available')))
+        query = "INSERT INTO products (name, description, price, image_path, available) VALUES (:1, :2, :3, :4, :5)"
+        bindings = [data['name'], data['description'], data['price'], data.get('image_path', None), data.get('available')]
 
+        cursor.execute(query, bindings)
         connection.commit()
         print("Item ajouté avec succès.")
         return jsonify({"message": "Item ajouté avec succès."})
@@ -126,8 +126,8 @@ def get_item():
         cursor.execute(f"""
             SELECT p.id, p.name, p.description, p.price, p.image_path, p.available
             FROM Products p
-            WHERE p.name = '{name}'
-        """)
+            WHERE p.name = :1
+        """, [name])
         item = cursor.fetchone()
 
         if item:
@@ -169,19 +169,18 @@ def delete_item():
     if 'id' not in data:
         return jsonify({"message": "ID de l'item inexistant."}), 400
 
-    id = data['id']
     cursor = connection.cursor()
 
     try:
-        cursor.execute("DELETE FROM products WHERE id = :1", (id,))
+        cursor.execute("DELETE FROM products WHERE id = :1", [data["id"]])
 
         connection.commit()
 
-        return jsonify({"message": f"Item avec l'ID {id} supprimé avec succès."})
+        return jsonify({"message": f"Item avec l'ID {data["id"]} supprimé avec succès."})
     except oracledb.DatabaseError as e:
         # En cas d'erreur on rollback
         connection.rollback()
-        error_message = f"Erreur lors de la suppression de l'item avec l'ID {id}: {str(e)}"
+        error_message = f"Erreur lors de la suppression de l'item avec l'ID {data["id"]}: {str(e)}"
         print(error_message)
         return jsonify({"message": error_message}), 500
     finally:
@@ -221,22 +220,28 @@ def update_item():
     try:
         update_query = "UPDATE products SET"
 
-        updates = []
+        bindings = dict()
         if new_name:
-            updates.append(f" name = '{new_name}'")
+            update_query.append(" name = :name,")
+            bindings.update(name=new_name)
         if new_description:
-            updates.append(f" description = '{new_description}'")
+            update_query.append(" description = :description,")
+            bindings.update(description=new_description)
         if new_price:
-            updates.append(f" price = {new_price}")
+            update_query.append(" price = :price,")
+            bindings.update(price=new_price)
         if new_image:
-            updates.append(f" image_path = '{new_image}'")
+            update_query.append(" image_path = :image_path,")
+            bindings.update(image=new_image)
         if new_available is not None:
-            updates.append(f" available = {new_available}")
+            update_query.append(" available = :available,")
+            bindings.update(available=new_available)
 
-        update_query += ', '.join(updates)
-        update_query += f" WHERE id = {id}"
+        update_query = update_query.rstrip(',')
+        update_query += " WHERE id = :product_id"
+        bindings.update(product_id=id)
 
-        cursor.execute(update_query)
+        cursor.execute(update_query, bindings)
 
         connection.commit()
 
