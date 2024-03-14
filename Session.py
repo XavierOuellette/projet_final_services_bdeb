@@ -47,7 +47,7 @@ def validate_session(session_id, ip_address, user_agent):
 
 @app.route("/validate_session", methods=["POST"])
 def validate_session_route():
-    data = request.args;
+    data = request.get_json()
     response = validate_session(data.get("session_id"), data.get("ip_address"), data.get("user_agent"))
     if "error" in response.keys():
         return jsonify(response), 400
