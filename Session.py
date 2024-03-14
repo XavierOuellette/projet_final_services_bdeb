@@ -91,3 +91,19 @@ def validate_login():
         return jsonify({"session_id": session_id}), 200
     else:
         return jsonify({"error": "Crédentiels invalides."}), 401
+
+
+@app.route("/get_permissions", methods=["GET"])
+def get_permissions(session_id):
+    session_id = request.args.get('session_id')
+    cursor = connection.cursor()
+
+    # Retourne les permissions de l'utilisateur
+    perm_query = (f"SELECT rp.permission_name"
+                  "FROM SESSIONS s"
+                  "JOIN USERS u ON s.user_id = u.user_id"
+                  "JOIN ROLES r on u.user_id = r.user_id"
+                  "JOIN ROLE_PERMISSIONS rp ON r.role_name = rp.role_name"
+                  f"WHERE s.session_id = '{session_id}'")
+    cursor.execute(perm_query)
+    return cursor.fetchall()
