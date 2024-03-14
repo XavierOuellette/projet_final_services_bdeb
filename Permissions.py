@@ -37,7 +37,7 @@ def has_permission(session_id, permission):
                   "FROM SESSIONS s "
                   "JOIN USERS u ON s.user_id = u.user_id "
                   "JOIN ROLES r on u.role_name = r.role_name "
-                  "JOIN ROLE_PERMISSIONS rp ON r.role_name = u.role_name "
+                  "JOIN ROLE_PERMISSIONS rp ON r.role_name = rp.role_name "
                   f"WHERE s.session_id = '{session_id}' AND rp.permission_name = '{permission}'")
     cursor.execute(perm_query)
     perm = cursor.fetchone()

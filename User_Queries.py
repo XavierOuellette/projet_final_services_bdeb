@@ -181,7 +181,7 @@ def update_user():
     if 'error' in validation_response:
         return validation_response
 
-    if Permissions.has_permission(session_id, "user.update") is False:
+    if Permissions.has_permission(session_id, "admin.update_user") is False:
         return jsonify({"error": "Access denied"}), 403
 
     data = {key.lower(): value for key, value in data.items()} # NE PAS TOUCHER, SINON PROBLÈME
@@ -204,17 +204,17 @@ def update_user():
         update_query = "UPDATE users SET"
 
         if new_username:
-            update_query += f" username = {new_username},"
+            update_query += f" username = '{new_username}',"
         if new_email:
-            update_query += f" email = {new_email},"
+            update_query += f" email = '{new_email}',"
         if new_role:
-            update_query += f" role_name = {new_role},"
+            update_query += f" role_name = '{new_role}',"
 
         # Supprimez la virgule supplémentaire à la fin de la requête de mise à jour
         update_query = update_query.rstrip(',')
 
         # Ajoutez la clause WHERE pour filtrer par ID utilisateur
-        update_query += f" WHERE user_id = {user_id}"
+        update_query += f" WHERE user_id = '{user_id}'"
         cursor.execute(update_query)
 
         connection.commit()
