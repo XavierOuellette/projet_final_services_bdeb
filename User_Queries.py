@@ -138,30 +138,27 @@ def delete_user():
     session_id = data.get('session_id')
     ip_address = data.get('ip_address')
     user_agent = data.get('user_agent')
+    user_id = data.get('user_id')
 
     validation_response = validate_session(session_id, ip_address, user_agent)
     if 'error' in validation_response:
         return validation_response
 
-    if Permissions.has_permission(session_id, "user.delete") is False:
+    if Permissions.has_permission(session_id, "admin.delete_user") is False:
         return jsonify({"error": "Access denied"}), 403
 
-    if 'user_id' not in data:
-        return jsonify({"message": "ID de l'utilisateur inexistant."}), 400
-
-    user_id = data['user_id']
     cursor = connection.cursor()
 
     try:
-        cursor.execute("DELETE FROM users WHERE user_id = :1", (user_id,))
+        cursor.execute(f"DELETE FROM users WHERE user_id = '{user_id}'")
 
         connection.commit()
 
-        return jsonify({"message": f"Utilisateur avec l'ID {user_id} supprimé avec succès."})
+        return jsonify({"message": f"Utilisateur supprimé avec succès."})
     except oracledb.DatabaseError as e:
         # En cas d'erreur on rollback
         connection.rollback()
-        error_message = f"Erreur lors de la suppression de l'utilisateur avec l'ID {user_id}: {str(e)}"
+        error_message = f"Erreur lors de la suppression de l'utilisateur: {str(e)}"
         print(error_message)
         return jsonify({"message": error_message}), 500
     finally:
