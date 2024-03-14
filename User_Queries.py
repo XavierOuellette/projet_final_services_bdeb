@@ -22,8 +22,9 @@ def insert_user():
         # Hash + salt en utilisant bcrypt
         hashed_password = bcrypt.generate_password_hash(data["password"]).decode("utf-8")
 
-        cursor.execute("INSERT INTO users (username, password, email) VALUES (:1, :2, :3)",
-                       (data['username'], hashed_password, data['email']))
+        query = "INSERT INTO users (username, password, email) VALUES (:1, :2, :3)"
+        bindings = [data['username'], hashed_password, data['email']]
+        cursor.execute(query, bindings)
 
         connection.commit()
         print("User ajouté avec succès.")
@@ -108,8 +109,8 @@ def get_user():
             SELECT u.user_id, u.username, u.email, r.role_name
             FROM Users u
             JOIN Roles r ON u.role_name = r.role_name
-            WHERE u.username = '{username}'
-        """)
+            WHERE u.username = :1
+        """, [username])
         user = cursor.fetchone()
 
         if user:
@@ -150,7 +151,7 @@ def delete_user():
     cursor = connection.cursor()
 
     try:
-        cursor.execute(f"DELETE FROM users WHERE user_id = '{user_id}'")
+        cursor.execute("DELETE FROM users WHERE user_id = :1'", [user_id])
 
         connection.commit()
 
@@ -199,20 +200,25 @@ def update_user():
 
     try:
         update_query = "UPDATE users SET"
-
+        bindings = dict()
         if new_username:
-            update_query += f" username = '{new_username}',"
+            update_query += " username = :username,"
+            bindings.update(username=new_username)
         if new_email:
-            update_query += f" email = '{new_email}',"
+            update_query += " email = :email,"
+            bindings.update(email=new_email)
         if new_role:
-            update_query += f" role_name = '{new_role}',"
+            update_query += " role_name = :role,"
+            bindings.update(role=new_role)
 
         # Supprimez la virgule supplémentaire à la fin de la requête de mise à jour
         update_query = update_query.rstrip(',')
 
         # Ajoutez la clause WHERE pour filtrer par ID utilisateur
-        update_query += f" WHERE user_id = '{user_id}'"
-        cursor.execute(update_query)
+        update_query += " WHERE user_id = :id"
+        bindings.update(id=user_id)
+
+        cursor.execute(update_query, bindings)
 
         connection.commit()
 
