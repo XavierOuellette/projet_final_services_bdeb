@@ -16,9 +16,6 @@ def insert_user():
     if not all(key in data for key in ('username', 'password', 'email')):
         abort(400, 'Les données incomplètes pour l\'insertion')
 
-    if Permissions.has_permission(data.get("session_id"), "user.insert") is False:
-        return jsonify({"error": "Access denied"}), 403
-
     cursor = connection.cursor()
 
     try:

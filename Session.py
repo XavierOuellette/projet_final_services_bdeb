@@ -1,7 +1,7 @@
 import secrets
 import string
 from __main__ import app, connection
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import request, jsonify
 from Main import bcrypt
 
@@ -31,7 +31,7 @@ def validate_session(session_id, ip_address, user_agent):
 
     expires_at, stored_ip_address, stored_user_agent = session_info
 
-    if expires_at < datetime.now() + datetime.hour(5) or stored_ip_address != ip_address or stored_user_agent != user_agent:
+    if expires_at < datetime.now() + timedelta(hours=3) or stored_ip_address != ip_address or stored_user_agent != user_agent:
         return {"error": "Session invalide"}
     else:
         # Prolonge la durée de la session
@@ -48,7 +48,10 @@ def validate_session(session_id, ip_address, user_agent):
 @app.route("/validate_session", methods=["POST"])
 def validate_session_route():
     data = request.args;
-    return jsonify(data.get("session_id"), data.get("ip_address"), data.get("user_agent"))
+    response = validate_session(data.get("session_id"), data.get("ip_address"), data.get("user_agent"))
+    if "error" in response.keys():
+        return jsonify(response), 400
+    return jsonify(response), 200
 
 
 # Valide les crédentiels de connexion et utilise l'addresse ip et user_agent
@@ -94,3 +97,24 @@ def validate_login():
         return jsonify({"session_id": session_id}), 200
     else:
         return jsonify({"error": "Crédentiels invalides."}), 401
+
+
+@app.route("/disconnect", methods=["POST"])
+def disconnect():
+    session_id = request.json.get("session_id")
+    ip_address = request.json.get('ip_address')
+    user_agent = request.json.get('user_agent')
+    if not all([session_id, ip_address, user_agent]):
+        return jsonify({"error": "Certains paramètres sont manquants."}), 400
+
+    cursor = connection.cursor()
+
+    # Requête pour l'utilisateur et son mot de passe
+    query = (f"DELETE FROM SESSIONS "
+             f"WHERE session_id = '{session_id}'"
+             f"AND user_agent = '{user_agent}'"
+             f"AND ip_address = '{ip_address}'");
+    cursor.execute(query)
+    cursor.close()
+
+    return jsonify({"message": "Success"}, 200)
