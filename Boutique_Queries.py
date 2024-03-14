@@ -3,13 +3,21 @@ import oracledb
 from flask import request, abort, jsonify
 
 import Permissions
+from Session import validate_session
 
 
 @app.route('/insert_item', methods=['POST'])
 def insert_item():
     data = request.get_json()
+    session_id = data.get("session_id")
+    ip_address = data.get("ip_address")
+    user_agent = data.get("user_agent")
 
-    if Permissions.has_permission(data.get("session_id"), "shop.insert") is False:
+    validation_response = validate_session(session_id, ip_address, user_agent)
+    if 'error' in validation_response:
+        return jsonify(validation_response), 400
+
+    if Permissions.has_permission(session_id, "shop.insert") is False:
         return jsonify({"error": "Access denied"}), 403
 
     if not all(key in data for key in ('name', 'description', 'price', 'available')):
@@ -45,7 +53,16 @@ def get_all_items():
     # description = request.args.get('description')
     # price = request.args.get('price')
     # image_path = request.args.get('image_path')
-    session_id = request.args.get('session_id')
+
+    data = request.get_json()
+    session_id = data.get("session_id")
+    ip_address = data.get("ip_address")
+    user_agent = data.get("user_agent")
+
+    validation_response = validate_session(session_id, ip_address, user_agent)
+    if 200 in validation_response[1]:
+        return jsonify(validation_response), 400
+
     if Permissions.has_permission(session_id, "shop.get_data") is False:
         return jsonify({"error": "Access denied"}), 403
 
@@ -90,7 +107,16 @@ def get_item():
     # description = request.args.get('description')
     # price = request.args.get('price')
     # image_path = request.args.get('image_path')
-    session_id = request.args.get('session_id')
+
+    data = request.get_json()
+    session_id = data.get("session_id")
+    ip_address = data.get("ip_address")
+    user_agent = data.get("user_agent")
+
+    validation_response = validate_session(session_id, ip_address, user_agent)
+    if 'error' in validation_response:
+        return validation_response
+
     if Permissions.has_permission(session_id, "shop.get_data") is False:
         return jsonify({"error": "Access denied"}), 403
 
@@ -129,11 +155,15 @@ def get_item():
 # Retourne confirmation de la suppression de l'item
 def delete_item():
     data = request.get_json()
-    # session_id = data.get('session_id')
-    # ip_address = data.get('ip_address')
-    # user_agent = data.get('user_agent')
+    session_id = data.get("session_id")
+    ip_address = data.get("ip_address")
+    user_agent = data.get("user_agent")
 
-    if Permissions.has_permission(data.get("session_id"), "shop.delete") is False:
+    validation_response = validate_session(session_id, ip_address, user_agent)
+    if 'error' in validation_response:
+        return validation_response
+
+    if Permissions.has_permission(session_id, "shop.delete") is False:
         return jsonify({"error": "Access denied"}), 403
 
     if 'id' not in data:
@@ -161,8 +191,15 @@ def delete_item():
 @app.route('/update_item', methods=["POST"])
 def update_item():
     data = request.get_json()
+    session_id = data.get("session_id")
+    ip_address = data.get("ip_address")
+    user_agent = data.get("user_agent")
 
-    if Permissions.has_permission(data.get("session_id"), "shop.update") is False:
+    validation_response = validate_session(session_id, ip_address, user_agent)
+    if 'error' in validation_response:
+        return validation_response
+
+    if Permissions.has_permission(session_id, "shop.update") is False:
         return jsonify({"error": "Access denied"}), 403
 
     data = {key.lower(): value for key, value in data.items()}  # NE PAS TOUCHER, SINON PROBLÈME
