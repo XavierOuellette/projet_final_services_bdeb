@@ -1,8 +1,9 @@
 from __main__ import app, connection
 import oracledb
 from flask import request, abort, jsonify
-import bcrypt
 
+import Permissions
+from Main import bcrypt
 from Session import validate_session
 
 
@@ -15,13 +16,14 @@ def insert_user():
     if not all(key in data for key in ('username', 'password', 'email')):
         abort(400, 'Les données incomplètes pour l\'insertion')
 
+    if Permissions.has_permission(data.get("session_id"), "user.insert") is False:
+        return jsonify({"error": "Access denied"}), 403
+
     cursor = connection.cursor()
 
     try:
         # Hash + salt en utilisant bcrypt
-        bytes_password = str.encode(data['password'])
-        salt = bcrypt.gensalt()
-        hashed_password = bcrypt.hashpw(password=bytes_password, salt=salt)
+        hashed_password = bcrypt.generate_password_hash(data["password"]).decode("utf-8")
 
         cursor.execute("INSERT INTO users (username, password, email) VALUES (:1, :2, :3)",
                        (data['username'], hashed_password, data['email']))
@@ -49,7 +51,10 @@ def get_all_users():
 
     validation_response = validate_session(session_id, ip_address, user_agent)
     if 'error' in validation_response:
-        return validation_response
+        return jsonify(validation_response), 400
+
+    if Permissions.has_permission(session_id, "user.get_data") is False:
+        return jsonify({"error": "Access denied"}), 403
 
     cursor = connection.cursor()
 
@@ -96,6 +101,9 @@ def get_user():
     if 'error' in validation_response:
         return validation_response
 
+    if Permissions.has_permission(session_id, "user.get_data") is False:
+        return jsonify({"error": "Access denied"}), 403
+
     cursor = connection.cursor()
 
     try:
@@ -138,6 +146,9 @@ def delete_user():
     if 'error' in validation_response:
         return validation_response
 
+    if Permissions.has_permission(session_id, "user.delete") is False:
+        return jsonify({"error": "Access denied"}), 403
+
     if 'user_id' not in data:
         return jsonify({"message": "ID de l'utilisateur inexistant."}), 400
 
@@ -172,6 +183,9 @@ def update_user():
     validation_response = validate_session(session_id, ip_address, user_agent)
     if 'error' in validation_response:
         return validation_response
+
+    if Permissions.has_permission(session_id, "user.update") is False:
+        return jsonify({"error": "Access denied"}), 403
 
     data = {key.lower(): value for key, value in data.items()} # NE PAS TOUCHER, SINON PROBLÈME
     if 'user_id' not in data:
