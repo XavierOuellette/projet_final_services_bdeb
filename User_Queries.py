@@ -16,9 +16,6 @@ def insert_user():
     if not all(key in data for key in ('username', 'password', 'email')):
         abort(400, 'Les données incomplètes pour l\'insertion')
 
-    if Permissions.has_permission(data.get("session_id"), "user.insert") is False:
-        return jsonify({"error": "Access denied"}), 403
-
     cursor = connection.cursor()
 
     try:
@@ -207,17 +204,17 @@ def update_user():
         update_query = "UPDATE users SET"
 
         if new_username:
-            update_query += f" username = {new_username},"
+            update_query += f" username = '{new_username}',"
         if new_email:
-            update_query += f" email = {new_email},"
+            update_query += f" email = '{new_email}',"
         if new_role:
-            update_query += f" role_name = {new_role},"
+            update_query += f" role_name = '{new_role}',"
 
         # Supprimez la virgule supplémentaire à la fin de la requête de mise à jour
         update_query = update_query.rstrip(',')
 
         # Ajoutez la clause WHERE pour filtrer par ID utilisateur
-        update_query += f" WHERE user_id = {user_id}"
+        update_query += f" WHERE user_id = '{user_id}'"
         cursor.execute(update_query)
 
         connection.commit()
