@@ -31,7 +31,7 @@ def validate_session(session_id, ip_address, user_agent):
 
     expires_at, stored_ip_address, stored_user_agent = session_info
 
-    if expires_at < datetime.now() or stored_ip_address != ip_address or stored_user_agent != user_agent:
+    if expires_at < datetime.now() + datetime.hour(5) or stored_ip_address != ip_address or stored_user_agent != user_agent:
         return {"error": "Session invalide"}
     else:
         # Prolonge la durée de la session
@@ -43,6 +43,12 @@ def validate_session(session_id, ip_address, user_agent):
         connection.commit()
         cursor.close()
         return {"message": "Valide"}
+
+
+@app.route("/validate_session", methods=["POST"])
+def validate_session_route():
+    data = request.args;
+    return jsonify(data.get("session_id"), data.get("ip_address"), data.get("user_agent"))
 
 
 # Valide les crédentiels de connexion et utilise l'addresse ip et user_agent
