@@ -181,7 +181,7 @@ def update_user():
     if 'error' in validation_response:
         return validation_response
 
-    if Permissions.has_permission(session_id, "user.update") is False:
+    if Permissions.has_permission(session_id, "admin.update_user") is False:
         return jsonify({"error": "Access denied"}), 403
 
     data = {key.lower(): value for key, value in data.items()} # NE PAS TOUCHER, SINON PROBLÈME
