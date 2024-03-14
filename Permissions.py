@@ -25,8 +25,8 @@ def has_permission_route():
 
     has_perm = has_permission(session_id, permission)
     if has_perm is False:
-        return jsonify({"response": "false"})
-    return jsonify({"response": "true"})
+        return jsonify({"response": "false"}), 403
+    return jsonify({"response": "true"}), 200
 
 
 def has_permission(session_id, permission):
