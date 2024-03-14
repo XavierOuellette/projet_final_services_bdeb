@@ -22,7 +22,7 @@ def validate_session(session_id, ip_address, user_agent):
     cursor = connection.cursor()
 
     # Requête pour la session id
-    query = "SELECT user_id, expires_at, ip_address, user_agent FROM Sessions WHERE session_id = :session_id"
+    query = "SELECT expires_at, ip_address, user_agent FROM Sessions WHERE session_id = :session_id"
     cursor.execute(query, {'session_id': session_id})
     session_info = cursor.fetchone()
 
@@ -30,7 +30,8 @@ def validate_session(session_id, ip_address, user_agent):
         return {"error": "Session invalide"}
 
     expires_at, stored_ip_address, stored_user_agent = session_info
-    if expires_at and expires_at < datetime.now() or stored_ip_address != ip_address or stored_user_agent != user_agent:
+
+    if expires_at < datetime.now() or stored_ip_address != ip_address or stored_user_agent != user_agent:
         return {"error": "Session invalide"}
     else:
         # Prolonge la durée de la session
