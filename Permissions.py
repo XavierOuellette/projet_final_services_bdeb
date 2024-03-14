@@ -33,7 +33,7 @@ def has_permission():
                   f"WHERE s.session_id = '{session_id}' AND rp.permission_name = '{permission}'")
     cursor.execute(perm_query)
     perm = cursor.fetchone()
-    if permission not in perm:
+    if perm is None or permission not in perm:
         return jsonify({"response": "false"})
     return jsonify({"response": "true"})
 
