@@ -17,7 +17,7 @@ def insert_user():
         abort(400, 'Les données incomplètes pour l\'insertion')
 
     if Permissions.has_permission(data.get("session_id"), "user.insert") is False:
-        return jsonify({"error": "Access denied"})
+        return jsonify({"error": "Access denied"}), 403
 
     cursor = connection.cursor()
 
@@ -56,7 +56,7 @@ def get_all_users():
         return validation_response
 
     if Permissions.has_permission(session_id, "user.get_data") is False:
-        return jsonify({"error": "Access denied"})
+        return jsonify({"error": "Access denied"}), 403
 
     cursor = connection.cursor()
 
@@ -104,7 +104,7 @@ def get_user():
         return validation_response
 
     if Permissions.has_permission(session_id, "user.get_data") is False:
-        return jsonify({"error": "Access denied"})
+        return jsonify({"error": "Access denied"}), 403
 
     cursor = connection.cursor()
 
@@ -148,11 +148,11 @@ def delete_user():
     if 'error' in validation_response:
         return validation_response
 
+    if Permissions.has_permission(session_id, "user.delete") is False:
+        return jsonify({"error": "Access denied"}), 403
+
     if 'user_id' not in data:
         return jsonify({"message": "ID de l'utilisateur inexistant."}), 400
-
-    if Permissions.has_permission(session_id, "user.delete") is False:
-        return jsonify({"error": "Access denied"})
 
     user_id = data['user_id']
     cursor = connection.cursor()
@@ -185,6 +185,9 @@ def update_user():
     validation_response = validate_session(session_id, ip_address, user_agent)
     if 'error' in validation_response:
         return validation_response
+
+    if Permissions.has_permission(session_id, "user.update") is False:
+        return jsonify({"error": "Access denied"}), 403
 
     data = {key.lower(): value for key, value in data.items()} # NE PAS TOUCHER, SINON PROBLÈME
     if 'user_id' not in data:

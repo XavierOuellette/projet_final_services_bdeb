@@ -2,12 +2,15 @@ from __main__ import app, connection
 import oracledb
 from flask import request, abort, jsonify
 
-from Session import validate_session
+import Permissions
 
 
 @app.route('/insert_item', methods=['POST'])
 def insert_item():
     data = request.get_json()
+
+    if Permissions.has_permission(data.get("session_id"), "shop.insert") is False:
+        return jsonify({"error": "Access denied"}), 403
 
     if not all(key in data for key in ('name', 'description', 'price', 'available')):
         abort(400, 'Les données incomplètes pour l\'insertion')
@@ -42,6 +45,9 @@ def get_all_items():
     # description = request.args.get('description')
     # price = request.args.get('price')
     # image_path = request.args.get('image_path')
+    session_id = request.args.get('session_id')
+    if Permissions.has_permission(session_id, "shop.get_data") is False:
+        return jsonify({"error": "Access denied"}), 403
 
     cursor = connection.cursor()
 
@@ -84,6 +90,9 @@ def get_item():
     # description = request.args.get('description')
     # price = request.args.get('price')
     # image_path = request.args.get('image_path')
+    session_id = request.args.get('session_id')
+    if Permissions.has_permission(session_id, "shop.get_data") is False:
+        return jsonify({"error": "Access denied"}), 403
 
     cursor = connection.cursor()
 
@@ -124,6 +133,9 @@ def delete_item():
     # ip_address = data.get('ip_address')
     # user_agent = data.get('user_agent')
 
+    if Permissions.has_permission(data.get("session_id"), "shop.delete") is False:
+        return jsonify({"error": "Access denied"}), 403
+
     if 'id' not in data:
         return jsonify({"message": "ID de l'item inexistant."}), 400
 
@@ -149,6 +161,9 @@ def delete_item():
 @app.route('/update_item', methods=["POST"])
 def update_item():
     data = request.get_json()
+
+    if Permissions.has_permission(data.get("session_id"), "shop.update") is False:
+        return jsonify({"error": "Access denied"}), 403
 
     data = {key.lower(): value for key, value in data.items()}  # NE PAS TOUCHER, SINON PROBLÈME
     if 'id' not in data:
