@@ -1,12 +1,9 @@
-import hashlib
 import secrets
 import string
 from __main__ import app, connection
 from datetime import datetime
-import bcrypt
-
-import oracledb
 from flask import request, jsonify
+from Main import bcrypt
 
 # In minutes
 SESSION_LENGTH = 15
@@ -20,35 +17,32 @@ def generate_session_id(length=64):
 # Vérifie qu'une session est valide
 def validate_session(session_id, ip_address, user_agent):
     if not all([session_id, ip_address, user_agent]):
-        return jsonify({"error": "Certains paramètres sont manquants."}), 400
+        return {"error": "Certains paramètres sont manquants."}
 
     cursor = connection.cursor()
 
     # Requête pour la session id
-    query = "SELECT user_id, expires_at, ip_address, user_agent FROM Sessions WHERE session_id = :session_id"
+    query = "SELECT expires_at, ip_address, user_agent FROM Sessions WHERE session_id = :session_id"
     cursor.execute(query, {'session_id': session_id})
     session_info = cursor.fetchone()
 
-    if session_info is not None:
-        expires_at, stored_ip_address, stored_user_agent = session_info
-        if expires_at and expires_at < datetime.now():
-            return jsonify({"error": "Session expirée."}), 401
-        elif stored_ip_address != ip_address:
-            return jsonify({"error": "Adresse IP invalide."}), 401
-        elif stored_user_agent != user_agent:
-            return jsonify({"error": "User agent invalide."}), 401
-        else:
-            # Prolonge la durée de la session
-            update_query = (f"UPDATE Sessions SET expires_at = SYSTIMESTAMP + INTERVAL '{SESSION_LENGTH}' MINUTE WHERE "
-                            f"session_id = '{session_id}'")
+    if session_info is None:
+        return {"error": "Session invalide"}
 
-            cursor = connection.cursor()
-            cursor.execute(update_query)
-            connection.commit()
-            cursor.close()
-            return jsonify({"message": "Valide"}), 200
+    expires_at, stored_ip_address, stored_user_agent = session_info
+
+    if expires_at < datetime.now() or stored_ip_address != ip_address or stored_user_agent != user_agent:
+        return {"error": "Session invalide"}
     else:
-        return jsonify({"error": "ID de session invalide."}), 401
+        # Prolonge la durée de la session
+        update_query = (f"UPDATE Sessions SET expires_at = SYSTIMESTAMP + INTERVAL '{SESSION_LENGTH}' MINUTE WHERE "
+                        f"session_id = '{session_id}'")
+
+        cursor = connection.cursor()
+        cursor.execute(update_query)
+        connection.commit()
+        cursor.close()
+        return {"message": "Valide"}
 
 
 # Valide les crédentiels de connexion et utilise l'addresse ip et user_agent
@@ -72,8 +66,10 @@ def validate_login():
     cursor.execute(query)
     data = cursor.fetchone()
 
-    if not data or bcrypt.checkpw(password, data[1]):
-        return jsonify({"error": "Crédentiels invalide"}), 200
+    encoded_password = password.encode("utf-8")
+    hashed_password = bytes(data[1], "utf-8")
+    if data is None or not bcrypt.check_password_hash(hashed_password, encoded_password):
+        return jsonify({"error": "Crédentiels invalide"}), 400
 
     user_id = data[0]
     if user_id:
