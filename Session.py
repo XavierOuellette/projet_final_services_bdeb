@@ -1,7 +1,7 @@
 import secrets
 import string
 from __main__ import app, connection
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import request, jsonify
 from Main import bcrypt
 
@@ -23,7 +23,7 @@ def validate_session(session_id, ip_address, user_agent):
 
     # Requête pour la session id
     query = "SELECT expires_at, ip_address, user_agent FROM Sessions WHERE session_id = :session_id"
-    cursor.execute(query, {'session_id': session_id})
+    cursor.execute(query, [session_id])
     session_info = cursor.fetchone()
 
     if session_info is None:
@@ -31,18 +31,27 @@ def validate_session(session_id, ip_address, user_agent):
 
     expires_at, stored_ip_address, stored_user_agent = session_info
 
-    if expires_at < datetime.now() or stored_ip_address != ip_address or stored_user_agent != user_agent:
+    if expires_at < datetime.now() + timedelta(hours=3) or stored_ip_address != ip_address or stored_user_agent != user_agent:
         return {"error": "Session invalide"}
     else:
         # Prolonge la durée de la session
-        update_query = (f"UPDATE Sessions SET expires_at = SYSTIMESTAMP + INTERVAL '{SESSION_LENGTH}' MINUTE WHERE "
-                        f"session_id = '{session_id}'")
+        update_query = "UPDATE Sessions SET expires_at = SYSTIMESTAMP + NUMTODSINTERVAL(:1, 'MINUTE') WHERE session_id = :2"
+        bindings = [SESSION_LENGTH, session_id]
 
         cursor = connection.cursor()
-        cursor.execute(update_query)
+        cursor.execute(update_query, bindings)
         connection.commit()
         cursor.close()
         return {"message": "Valide"}
+
+
+@app.route("/validate_session", methods=["POST"])
+def validate_session_route():
+    data = request.get_json()
+    response = validate_session(data.get("session_id"), data.get("ip_address"), data.get("user_agent"))
+    if "error" in response.keys():
+        return jsonify(response), 400
+    return jsonify(response), 200
 
 
 # Valide les crédentiels de connexion et utilise l'addresse ip et user_agent
@@ -62,8 +71,8 @@ def validate_login():
     cursor = connection.cursor()
 
     # Requête pour l'utilisateur et son mot de passe
-    query = f"SELECT user_id, password FROM USERS WHERE username = '{username}'"
-    cursor.execute(query)
+    query = "SELECT user_id, password FROM USERS WHERE username = :username"
+    cursor.execute(query, [username])
     data = cursor.fetchone()
 
     encoded_password = password.encode("utf-8")
@@ -75,16 +84,46 @@ def validate_login():
     if user_id:
         session_id = generate_session_id()
 
-        # Insérer la nouvelle session dans la base de données
-        insert_query = (
-            "INSERT INTO Sessions (session_id, user_id, expires_at, ip_address, user_agent) "
-            f"VALUES ('{session_id}', {user_id}, SYSTIMESTAMP + INTERVAL '{SESSION_LENGTH}' MINUTE, '{ip_address}', '{user_agent}')"
-        )
+        query = """
+                SELECT SYSTIMESTAMP + NUMTODSINTERVAL(:my_variable, 'MINUTE')
+                FROM DUAL
+                """
+        cursor.execute(query, my_variable=SESSION_LENGTH)
+        result = cursor.fetchone()
 
-        cursor.execute(insert_query)
+        # Extract the calculated expiration timestamp from the result tuple
+        expires_at = result[0]
+
+        # Insérer la nouvelle session dans la base de données
+        insert_query = "INSERT INTO SESSIONS (session_id, user_id, expires_at, ip_address, user_agent) VALUES (:1, :2, :3, :4, :5)"
+        bindings = [session_id, user_id, expires_at, ip_address, user_agent]
+        cursor.execute(insert_query, bindings)
         connection.commit()
         cursor.close()
 
         return jsonify({"session_id": session_id}), 200
     else:
         return jsonify({"error": "Crédentiels invalides."}), 401
+
+
+@app.route("/disconnect", methods=["POST"])
+def disconnect():
+    session_id = request.json.get("session_id")
+    ip_address = request.json.get('ip_address')
+    user_agent = request.json.get('user_agent')
+    if not all([session_id, ip_address, user_agent]):
+        return jsonify({"error": "Certains paramètres sont manquants."}), 400
+
+    cursor = connection.cursor()
+
+    # Requête pour l'utilisateur et son mot de passe
+    query = ("DELETE FROM SESSIONS "
+             "WHERE session_id = :1"
+             "AND user_agent = :2"
+             "AND ip_address = :3")
+
+    bindings = [session_id, user_agent, ip_address]
+    cursor.execute(query, bindings)
+    cursor.close()
+
+    return jsonify({"message": "Success"}, 200)

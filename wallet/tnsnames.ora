@@ -1,0 +1,8 @@
+franciscloud_high = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.ca-montreal-1.oraclecloud.com))(connect_data=(service_name=g3d2b7cd7fa56ea_franciscloud_high.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
+
+franciscloud_low = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.ca-montreal-1.oraclecloud.com))(connect_data=(service_name=g3d2b7cd7fa56ea_franciscloud_low.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
+
+franciscloud_medium = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.ca-montreal-1.oraclecloud.com))(connect_data=(service_name=g3d2b7cd7fa56ea_franciscloud_medium.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
+
+
+
