@@ -118,9 +118,9 @@ def disconnect():
 
     # Requête pour l'utilisateur et son mot de passe
     query = ("DELETE FROM SESSIONS "
-             "WHERE session_id = :session_id"
-             "AND user_agent = :user_agent"
-             "AND ip_address = :ip_address",)
+             "WHERE session_id = :1"
+             "AND user_agent = :2"
+             "AND ip_address = :3")
 
     bindings = [session_id, user_agent, ip_address]
     cursor.execute(query, bindings)
