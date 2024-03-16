@@ -71,7 +71,7 @@ def validate_login():
     cursor = connection.cursor()
 
     # Requête pour l'utilisateur et son mot de passe
-    query = "SELECT user_id, password FROM USERS WHERE username = :username"
+    query = "SELECT user_id, password FROM USERS WHERE username = :1"
     cursor.execute(query, [username])
     data = cursor.fetchone()
 
