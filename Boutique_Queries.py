@@ -47,24 +47,6 @@ def insert_item():
 # Méthode pour aller chercher tout les items
 # Et qui retourne leur id, name, description, price et image
 def get_all_items():
-    # DÉCOMMENTER XAVIER
-    # id = request.args.get('id')
-    # name = request.args.get('name')
-    # description = request.args.get('description')
-    # price = request.args.get('price')
-    # image_path = request.args.get('image_path')
-
-    data = request.get_json()
-    session_id = data.get("session_id")
-    ip_address = data.get("ip_address")
-    user_agent = data.get("user_agent")
-
-    validation_response = validate_session(session_id, ip_address, user_agent)
-    if 200 in validation_response[1]:
-        return jsonify(validation_response), 400
-
-    if Permissions.has_permission(session_id, "shop.get_data") is False:
-        return jsonify({"error": "Access denied"}), 403
 
     cursor = connection.cursor()
 
@@ -102,24 +84,8 @@ def get_all_items():
 # Méthode pour chercher un item
 # Retourne l'id, name, description, price et image_path
 def get_item():
-    # id = request.args.get('id')
+
     name = request.args.get('name').lower()
-    # description = request.args.get('description')
-    # price = request.args.get('price')
-    # image_path = request.args.get('image_path')
-
-    data = request.get_json()
-    session_id = data.get("session_id")
-    ip_address = data.get("ip_address")
-    user_agent = data.get("user_agent")
-
-    validation_response = validate_session(session_id, ip_address, user_agent)
-    if 'error' in validation_response:
-        return validation_response
-
-    if Permissions.has_permission(session_id, "shop.get_data") is False:
-        return jsonify({"error": "Access denied"}), 403
-
     cursor = connection.cursor()
 
     try:
