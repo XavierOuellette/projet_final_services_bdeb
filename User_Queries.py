@@ -1,10 +1,8 @@
 from __main__ import app, connection
 import oracledb
 from flask import request, abort, jsonify
-
-import Permissions
 from Main import bcrypt
-from Session import validate_session
+from Session import Session, session_required
 
 
 @app.route('/insert_user', methods=['POST'])
@@ -40,20 +38,10 @@ def insert_user():
 
 
 @app.route('/all_users', methods=["GET"])
+@session_required(["user.get_data"])
 # Méthode pour aller chercher tout les utilisateurs
 # Et qui retourne leur id, username, email et role
 def get_all_users():
-    session_id = request.args.get('session_id')
-    ip_address = request.args.get('ip_address')
-    user_agent = request.args.get('user_agent')
-
-    validation_response = validate_session(session_id, ip_address, user_agent)
-    if 'error' in validation_response:
-        return jsonify(validation_response), 400
-
-    if Permissions.has_permission(session_id, "user.get_data") is False:
-        return jsonify({"error": "Access denied"}), 403
-
     cursor = connection.cursor()
 
     try:
@@ -86,21 +74,12 @@ def get_all_users():
 
 
 @app.route('/get_user', methods=["GET"])
+@session_required(["user.get_data"])
 # Méthode pour chercher un user
 # Retourne l'id, username, email et role du user
 def get_user():
     username = request.args.get('username')
     user_id = request.args.get('user_id')
-    session_id = request.args.get('session_id')
-    ip_address = request.args.get('ip_address')
-    user_agent = request.args.get('user_agent')
-
-    validation_response = validate_session(session_id, ip_address, user_agent)
-    if 'error' in validation_response:
-        return validation_response
-
-    if Permissions.has_permission(session_id, "user.get_data") is False:
-        return jsonify({"error": "Access denied"}), 403
 
     cursor = connection.cursor()
 
@@ -132,26 +111,14 @@ def get_user():
 
 
 @app.route('/delete_user', methods=["DELETE"])
+@session_required(["admin.delete_user"])
 # Méthode pour supprimer un user a l'aide de son id
 # Retourne confirmation de la suppression du user
 def delete_user():
-    data = request.get_json()
-    session_id = data.get('session_id')
-    ip_address = data.get('ip_address')
-    user_agent = data.get('user_agent')
-    user_id = data.get('user_id')
-
-    validation_response = validate_session(session_id, ip_address, user_agent)
-    if 'error' in validation_response:
-        return validation_response
-
-    if Permissions.has_permission(session_id, "admin.delete_user") is False:
-        return jsonify({"error": "Access denied"}), 403
-
     cursor = connection.cursor()
 
     try:
-        cursor.execute("DELETE FROM users WHERE user_id = :1'", [user_id])
+        cursor.execute("DELETE FROM users WHERE user_id = :1'", [request.get_json().get("user_id")])
 
         connection.commit()
 
@@ -167,22 +134,13 @@ def delete_user():
 
 
 @app.route('/update_user', methods=["POST"])
+@session_required(["admin.update_user"])
 # Méthode pour mettre à jour les informations d'un utilisateur
 # Retourne confirmation de changement
 def update_user():
-    data = request.get_json()
-    session_id = data.get('session_id')
-    ip_address = data.get('ip_address')
-    user_agent = data.get('user_agent')
+    json = request.get_json()
 
-    validation_response = validate_session(session_id, ip_address, user_agent)
-    if 'error' in validation_response:
-        return validation_response
-
-    if Permissions.has_permission(session_id, "admin.update_user") is False:
-        return jsonify({"error": "Access denied"}), 403
-
-    data = {key.lower(): value for key, value in data.items()} # NE PAS TOUCHER, SINON PROBLÈME
+    data = {key.lower(): value for key, value in json.items()} # NE PAS TOUCHER, SINON PROBLÈME
     if 'user_id' not in data:
         return jsonify({"message": "L'ID de l'utilisateur est manquant."}), 400
 
