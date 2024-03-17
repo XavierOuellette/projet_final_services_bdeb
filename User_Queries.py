@@ -118,7 +118,7 @@ def delete_user():
     cursor = connection.cursor()
 
     try:
-        cursor.execute("DELETE FROM users WHERE user_id = :1'", [request.get_json().get("user_id")])
+        cursor.execute("DELETE FROM users WHERE user_id = :1", [request.get_json().get("user_id")])
 
         connection.commit()
 
