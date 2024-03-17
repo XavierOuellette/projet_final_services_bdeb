@@ -18,7 +18,8 @@ def generate_session_id(length=64):
 
 @app.route("/validate_session", methods=["POST"])
 def validate_session_route():
-    return Session(request.get_json()).get_json_response()
+    session = Session(request)
+    return session.get_json_response()
 
 
 # Valide les crédentiels de connexion et utilise l'addresse ip et user_agent
@@ -94,14 +95,14 @@ def disconnect():
 
 
 class Session:
-    isValid = False
-    session_id = -1
-    ip_address = -1
-    user_agent = -1
-    response_message = "Texte par défaut"
-    response_code = 400
 
     def __init__(self, rest_request):
+        self.isValid = False
+        self.session_id = -1
+        self.ip_address = -1
+        self.user_agent = -1
+        self.response_message = "Texte par défaut"
+        self.response_code = 400
         if rest_request.is_json:
             json = rest_request.get_json()
             self.session_id = json.get("session_id")
@@ -121,7 +122,7 @@ class Session:
         cursor = connection.cursor()
 
         # Requête pour la session id
-        query = "SELECT expires_at, ip_address, user_agent FROM Sessions WHERE session_id = :session_id"
+        query = "SELECT expires_at, ip_address, user_agent FROM Sessions WHERE session_id = :1"
         cursor.execute(query, [self.session_id])
         session_info = cursor.fetchone()
 
@@ -169,7 +170,7 @@ class Session:
         return True
 
     def get_json_response(self):
-        return jsonify({"error: ": self.response_message}, self.response_code)
+        return jsonify({"error: ": self.response_message}), self.response_code
 
 
 def session_required(permissions=None):

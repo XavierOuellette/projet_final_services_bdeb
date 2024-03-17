@@ -3,7 +3,7 @@ from flask import request, jsonify
 
 
 @app.route("/get_permissions", methods=["GET"])
-def get_permissions(session_id):
+def get_permissions():
     session_id = request.args.get('session_id')
     cursor = connection.cursor()
 
