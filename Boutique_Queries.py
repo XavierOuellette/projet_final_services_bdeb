@@ -61,7 +61,7 @@ def get_all_items():
             }
             items_list.append(item_dict)
 
-        return jsonify({"items": items_list})
+        return jsonify({"products": items_list})
     except oracledb.DatabaseError as e:
         error_message = "Erreur lors de la récupération des items: " + str(e)
         print(error_message)
