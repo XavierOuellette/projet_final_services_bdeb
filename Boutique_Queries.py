@@ -1,9 +1,7 @@
 from __main__ import app, connection
 import oracledb
 from flask import request, abort, jsonify
-
-import Permissions
-from Session import Session, session_required
+from Session import session_required
 
 
 @app.route('/insert_item', methods=['POST'])
