@@ -1,24 +1,13 @@
 from __main__ import app, connection
 import oracledb
 from flask import request, abort, jsonify
-
-import Permissions
-from Session import validate_session
+from Session import session_required
 
 
 @app.route('/insert_item', methods=['POST'])
+@session_required(["shop.insert"])
 def insert_item():
     data = request.get_json()
-    session_id = data.get("session_id")
-    ip_address = data.get("ip_address")
-    user_agent = data.get("user_agent")
-
-    validation_response = validate_session(session_id, ip_address, user_agent)
-    if 'error' in validation_response:
-        return jsonify(validation_response), 400
-
-    if Permissions.has_permission(session_id, "shop.insert") is False:
-        return jsonify({"error": "Access denied"}), 403
 
     if not all(key in data for key in ('name', 'description', 'price', 'available')):
         abort(400, 'Les données incomplètes pour l\'insertion')
@@ -47,25 +36,6 @@ def insert_item():
 # Méthode pour aller chercher tout les items
 # Et qui retourne leur id, name, description, price et image
 def get_all_items():
-    # DÉCOMMENTER XAVIER
-    # id = request.args.get('id')
-    # name = request.args.get('name')
-    # description = request.args.get('description')
-    # price = request.args.get('price')
-    # image_path = request.args.get('image_path')
-
-    data = request.get_json()
-    session_id = data.get("session_id")
-    ip_address = data.get("ip_address")
-    user_agent = data.get("user_agent")
-
-    validation_response = validate_session(session_id, ip_address, user_agent)
-    if 200 in validation_response[1]:
-        return jsonify(validation_response), 400
-
-    if Permissions.has_permission(session_id, "shop.get_data") is False:
-        return jsonify({"error": "Access denied"}), 403
-
     cursor = connection.cursor()
 
     try:
@@ -89,7 +59,7 @@ def get_all_items():
             }
             items_list.append(item_dict)
 
-        return jsonify({"items": items_list})
+        return jsonify({"products": items_list})
     except oracledb.DatabaseError as e:
         error_message = "Erreur lors de la récupération des items: " + str(e)
         print(error_message)
@@ -102,24 +72,7 @@ def get_all_items():
 # Méthode pour chercher un item
 # Retourne l'id, name, description, price et image_path
 def get_item():
-    # id = request.args.get('id')
     name = request.args.get('name').lower()
-    # description = request.args.get('description')
-    # price = request.args.get('price')
-    # image_path = request.args.get('image_path')
-
-    data = request.get_json()
-    session_id = data.get("session_id")
-    ip_address = data.get("ip_address")
-    user_agent = data.get("user_agent")
-
-    validation_response = validate_session(session_id, ip_address, user_agent)
-    if 'error' in validation_response:
-        return validation_response
-
-    if Permissions.has_permission(session_id, "shop.get_data") is False:
-        return jsonify({"error": "Access denied"}), 403
-
     cursor = connection.cursor()
 
     try:
@@ -151,20 +104,11 @@ def get_item():
 
 
 @app.route('/delete_item', methods=["DELETE"])
+@session_required(["shop.delete"])
 # Méthode pour supprimer un item a l'aide de son id
 # Retourne confirmation de la suppression de l'item
 def delete_item():
     data = request.get_json()
-    session_id = data.get("session_id")
-    ip_address = data.get("ip_address")
-    user_agent = data.get("user_agent")
-
-    validation_response = validate_session(session_id, ip_address, user_agent)
-    if 'error' in validation_response:
-        return validation_response
-
-    if Permissions.has_permission(session_id, "shop.delete") is False:
-        return jsonify({"error": "Access denied"}), 403
 
     if 'id' not in data:
         return jsonify({"message": "ID de l'item inexistant."}), 400
@@ -188,18 +132,9 @@ def delete_item():
 
 
 @app.route('/update_item', methods=["POST"])
+@session_required(["shop.update"])
 def update_item():
     data = request.get_json()
-    session_id = data.get("session_id")
-    ip_address = data.get("ip_address")
-    user_agent = data.get("user_agent")
-
-    validation_response = validate_session(session_id, ip_address, user_agent)
-    if 'error' in validation_response:
-        return validation_response
-
-    if Permissions.has_permission(session_id, "shop.update") is False:
-        return jsonify({"error": "Access denied"}), 403
 
     data = {key.lower(): value for key, value in data.items()}  # NE PAS TOUCHER, SINON PROBLÈME
     if 'id' not in data:
